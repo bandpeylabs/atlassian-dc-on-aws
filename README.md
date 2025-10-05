@@ -1,10 +1,20 @@
 # Enterprise-Scale Jira & Confluence Deployment on AWS
 
+[![AWS](https://img.shields.io/badge/AWS-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
+[![Atlassian](https://img.shields.io/badge/Atlassian-0052CC?style=for-the-badge&logo=atlassian&logoColor=white)](https://www.atlassian.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![Helm](https://img.shields.io/badge/Helm-0F1689?style=for-the-badge&logo=helm&logoColor=white)](https://helm.sh/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+
 ## Why This Solution Accelerator?
 
 > **Important**: Atlassian has ended support for the AWS Quick Start template. The template is no longer maintained or updated, and AWS launch configurations used by the template are being deprecated in favor of launch templates.
 
 **Atlassian now recommends deploying Data Center products on Kubernetes using their official Helm charts** for a more efficient, robust, and maintainable infrastructure setup.
+
+![](./design/diagrams.png)
 
 This solution accelerator provides a **production-ready template** that fills this gap by offering:
 
@@ -18,9 +28,40 @@ This solution accelerator provides a **production-ready template** that fills th
 
 This solution accelerator provides enterprise-grade deployment patterns for Atlassian Data Center products on AWS infrastructure. Many enterprises require Atlassian tools like Jira and Confluence to be hosted on their own infrastructure for compliance, security, and control requirements.
 
-Atlassian Data Center is the self-managed edition designed for enterprise environments, offering enhanced deployment flexibility and administrative control for mission-critical instances.
+Atlassian Data Center is the self-managed edition designed for enterprise environments, offering enhanced deployment flexibility and administrative control for mission-critical instances. Additionally, Data Center provides features exclusive to Data Center (like SAML single sign-on, self-protection via rate limiting, and CDN support) that are essential for enterprise security and performance requirements.
 
 ## Recommended Architecture
+
+> **TODO**: Architecture diagram will be added here
+
+### Security-First Design Principles
+
+**We believe in defense-in-depth security**, which is why our architecture includes:
+
+#### Bastion Host
+
+**We implement a bastion host** to enable secure administrative access to Jira Data Center without exposing the application directly to the internet. This approach provides:
+
+- **Controlled Access**: Single point of entry for administrative tasks
+- **Audit Trail**: Complete logging of all administrative activities
+- **Network Isolation**: Keeps application servers in private subnets
+
+#### Application Load Balancer
+
+**We specifically choose AWS Application Load Balancer** because it provides enterprise-grade features that align with our security and performance requirements:
+
+- **SSL/TLS Termination**: Centralized certificate management
+- **Session Affinity**: Essential for Jira's clustering requirements
+- **Health Checks**: Automatic failover and traffic routing
+
+#### Monitoring and Observability
+
+**We integrate Amazon CloudWatch** as our comprehensive monitoring solution because we believe visibility is crucial for enterprise operations:
+
+- **Pre-configured Dashboards**: Track CPU, disk, and network activity across all nodes
+- **Centralized Logging**: Collect and store logs from all components in a single source
+- **Real-time Monitoring**: Display latest log output for immediate troubleshooting
+- **Search and Analysis**: Advanced log querying capabilities for effective debugging
 
 ### Technology Stack
 
@@ -32,27 +73,6 @@ Atlassian Data Center is the self-managed edition designed for enterprise enviro
 | **Database**               | PostgreSQL, MySQL, Oracle, SQL Server   | Amazon Aurora PostgreSQL       | Aurora provides automatic scaling, backups, and multi-AZ deployment                 |
 | **Shared Storage**         | NFS, SMB/CIFS                           | Amazon EFS                     | EFS integrates seamlessly with EKS and provides automatic scaling                   |
 | **Load Balancing**         | Any load balancer with session affinity | AWS Application Load Balancer  | ALB provides native AWS integration and advanced routing capabilities               |
-
-### Architecture Components
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         AWS Cloud                            │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │                    VPC (Multi-AZ)                      │ │
-│  │  ┌──────────────────────────────────────────────────┐ │ │
-│  │  │              Amazon EKS Cluster                  │ │ │
-│  │  │  ┌────────────────────────────────────────────┐  │ │ │
-│  │  │  │   Jira DC Pods    │  Confluence DC Pods   │  │ │ │
-│  │  │  └────────────────────────────────────────────┘  │ │ │
-│  │  └──────────────────────────────────────────────────┘ │ │
-│  │                                                        │ │
-│  │  Application Load Balancer (ALB)                      │ │
-│  │  Amazon Aurora PostgreSQL Multi-AZ                    │ │
-│  │  Amazon EFS (Shared Storage)                          │ │
-│  └────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-```
 
 ### High Availability Design
 
@@ -205,3 +225,26 @@ Atlassian provides specific recommendations for load balancer configuration:
 - **Health Check Endpoint**: Use a stable, lightweight URL for health monitoring
 
 **We implement these recommendations through ALB target group configuration and Kubernetes service definitions.**
+
+### HTTPS Configuration
+
+**We strongly believe in security-first deployment practices**, which is why our solution accelerator includes comprehensive HTTPS setup as a core component rather than an optional add-on.
+
+#### Certificate Management
+
+**We recommend using AWS Certificate Manager (ACM)** because it provides:
+
+- **Automated Certificate Renewal**: Eliminates manual certificate management overhead
+- **Cost Efficiency**: No additional charges for ACM certificates
+- **Seamless Integration**: Direct integration with ALB for automatic SSL termination
+- **Compliance**: Meets enterprise security requirements out of the box
+
+#### Regional Considerations
+
+**We specifically design our solution to work across all AWS regions** that support the required services:
+
+- **Amazon EFS**: Available in most AWS regions for shared storage requirements
+- **Amazon EKS**: Ensures Kubernetes cluster availability
+- **Amazon Aurora**: Provides database high availability across multiple AZs
+
+**Our Terraform modules automatically validate region compatibility** and provide clear error messages if any required services are unavailable in your chosen region.
